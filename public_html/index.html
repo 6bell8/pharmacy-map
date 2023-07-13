@@ -40,42 +40,105 @@
         function (status, response) {
           let result = response.result;
           let items = result.items;
-          console.log(items[0].addrdetail.sido); // 시도값
-          console.log(items[0].addrdetail.sigugun); // 시도군
+          // console.log(items[0].addrdetail.sido); // 시도값
+          // console.log(items[0].addrdetail.sigugun); // 시도군
+          let sido_arr = items[0].addrdetail.sido.split(" ");
+          let gugun_arr = items[0].addrdetail.sigugun.split(" ");
+
+          let sido = "";
+          let gugun = "";
+
+          if (sido_arr.length == 1) {
+            sido = sido_arr[0];
+            gugun = gugun_arr[0];
+          } else if (sido_arr.length > 1) {
+            sido = sido_arr[0];
+            gugun = sido_arr[1];
+          }
+
+          console.log(sido);
+          console.log(gugun);
+
+          $.ajax({
+            url: "/pharmacy_list",
+            type: "GET",
+            cache: false,
+            dataType: "json",
+            data: {
+              Q0: sido,
+              Q1: gugun,
+              QT: "",
+              QN: "",
+              QRD: "",
+              pageNo: "1",
+              numOfRows: "1000",
+            },
+            //ajax 성공 유무는 success, error로 받음
+            success: function (data) {
+              console.log(data);
+              //지도를 삽입할 HTML 요소 또는 HTML 요소의 id를 지정합니다.
+              var mapDiv = document.getElementById("map"); // 'map'으로 선언해도 동일
+              //index.js에서 호출 할 url 주소를 그대로 적음
+
+              // 나의 위도, 경도를 추가한 옵션
+              let mapOptions = {
+                center: new naver.maps.LatLng(XY.lat, XY.lng),
+                zoom: 13,
+              };
+              // map에 mapOptions이라는 인자를 추가
+              var map = new naver.maps.Map(mapDiv, mapOptions);
+              data.items.item.forEach(function (item, index) {
+                let dutyName = item.dutyName; // 약국이름
+                let dutyAddr = item.dutyAddr; // 주소
+                let dutyTel1 = item.dutyTel1; // 전화번호
+                let dutyTime = "";
+
+                // marker를 생성 할 포지션 값
+                let pharmacy_location = new naver.maps.LatLng(
+                  item.wgs84Lat,
+                  item.wgs84Lon
+                );
+
+                let = marker = new naver.maps.Marker({
+                  map: map,
+                  position: pharmacy_location,
+                });
+
+                var contentString = [
+                  '<div class="iw_inner">',
+                  "   <h3>" + dutyName + "</h3>",
+                  "   <p>" + dutyAddr + "<br />",
+                  +dutyTel1 + "<br />",
+                  +dutyTime,
+                  "   </p>",
+                  "</div>",
+                ].join("");
+
+                var infowindow = new naver.maps.InfoWindow({
+                  content: contentString,
+                  maxWidth: 140,
+                  backgroundColor: "#eee",
+                  borderColor: "#2db400",
+                  borderWidth: 5,
+                  anchorSize: new naver.maps.Size(30, 30),
+                  anchorSkew: true,
+                  anchorColor: "#eee",
+                  pixelOffset: new naver.maps.Point(20, -20),
+                });
+
+                naver.maps.Event.addListener(marker, "click", function (e) {
+                  if (infowindow.getMap()) {
+                    infowindow.close();
+                  } else {
+                    infowindow.open(map, marker);
+                  }
+                });
+              });
+            },
+            error: function (request, status, error) {},
+          });
         }
       );
-
-      $.ajax({
-        url: "/pharmacy_list",
-        type: "GET",
-        cache: false,
-        dataType: "json",
-        data: {
-          Q0: "서울특별시",
-          Q1: "동작구",
-          QT: "",
-          QN: "",
-          QRD: "",
-          pageNo: "1",
-          numOfRows: "1000",
-        },
-        //ajax 성공 유무는 success, error로 받음
-        success: function (data) {
-          console.log(data);
-          //지도를 삽입할 HTML 요소 또는 HTML 요소의 id를 지정합니다.
-          var mapDiv = document.getElementById("map"); // 'map'으로 선언해도 동일
-          //index.js에서 호출 할 url 주소를 그대로 적음
-
-          // 나의 위도, 경도를 추가한 옵션
-          let mapOptions = {
-            center: new naver.maps.LatLng(XY.lat, XY.lng),
-            zoom: 13,
-          };
-          // map에 mapOptions이라는 인자를 추가
-          var map = new naver.maps.Map(mapDiv, mapOptions);
-        },
-        error: function (request, status, error) {},
-      });
     });
 
     // 위도와 경도를 구하는 함수
